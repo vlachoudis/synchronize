@@ -18,8 +18,8 @@ if word(args,1)=="-n" then do
 	args = subword(args,2)
 end
 
-parse var args remotehost conffile
-if remotehost="" | conffile = "" then do
+parse var args remoteHost conffile
+if remoteHost="" | conffile = "" then do
 	parse source . . prg .
 	say "syntax:" prg "[-nr] <remote-host> <config-file>"
 	say "desc:  -n : do not execute anything"
@@ -42,28 +42,28 @@ if flog<0 then
 call Log "sync.r V"Version Author
 
 /* local vars */
-RCMD  = RSH remotehost
-remoteconf = "/tmp/"localhost".conf."time("s")
+RCMD  = RSH remoteHost
 
 /* Find the changes in the remote & local hosts */
 call Log ">>> Local syncdiff..."
 call time 'r'
-localdiff = "/tmp/_diff."random()
-say SYNCDIFF "local" conffile localdiff
+tempext = time("s")
+localdiff = "/tmp/_diff."tempext
 SYNCDIFF "local" conffile localdiff
 if rc<>0 then call ERROR "RC="RC "running local syncdiff.r"
 call Log ">>>     Elapsed" format(time('r'),,1)'s'
 
 call Log ">>> Remote syncdiff..."
-remotediff = "/tmp/_remotediff."random()
-RCOPY conffile remotehost":"remoteconf
-RCMD SYNCDIFF localhost remoteconf remotediff
-if rc<>0 then call ERROR "RC="RC "running remote" remotehost":syncdiff.r"
+remotediff = "/tmp/_remotediff."time("s")
+remoteconf = "/tmp/_"localHost".conf."tempext
+RCOPY conffile remoteHost":"remoteconf
+RCMD SYNCDIFF localHost remoteconf remotediff
+if rc<>0 then call ERROR "RC="RC "running remote" remoteHost":syncdiff.r"
 call Log ">>>     Elapsed" format(time('r'),,1)'s'
 
 call Log ">>> Transfer compressed remote syncdiff file..."
 RCMD GZIP remotediff
-RCOPY remotehost":"remotediff".gz" remotediff".gz"
+RCOPY remoteHost":"remotediff".gz" remotediff".gz"
 GZIP "-d" remotediff".gz"
 call Log ">>>     Elapsed" format(time('r'),,1)'s'
 
@@ -99,8 +99,7 @@ call Log ">>> Update directory structure"
 call time 'r'
 FILEINFO "-l -o" syncpath||"local" conffile
 if RC<>0 then call ERROR "RC="RC "Executing fileinfo command"
-/*say RCMD FILEINFO "-r -o" syncpath||localhost remoteconf*/
-RCMD FILEINFO "-r -o" syncpath||localhost remoteconf
+RCMD FILEINFO "-r -o" syncpath||localHost remoteconf
 if RC<>0 then call ERROR "RC="RC "Executing remote fileinfo command"
 call Log ">>>     Elapsed" format(time('r'),,1)'s'
 
@@ -127,14 +126,15 @@ Compare:
 	remote. = ""
 	totalSize = 0
 
-	delete_local  = open("delete.local","w")	/* delete from local directory	*/
-	delete_remote = open("delete.remote","w")	/* delete from remote directory	*/
-	copy2local    = open("copy2local","w")		/* copy from remote to local	*/
-	copy2remote   = open("copy2remote","w")		/* copy from local to remote	*/
+	delete_local_name  = "/tmp/_delete.local."tempext
+	delete_remote_name = "/tmp/_delete.remote."tempext
+	copy2local_name    = "/tmp/_copy2local."tempext
+	copy2remote_name   = "/tmp/_copy2remote."tempext
 
 	do forever
 		localBase = ""
 		remoteBase = ""
+
 		call ReadDir flocal,"local.","localBase"
 		call ReadDir fremote,"remote.","remoteBase"
 
@@ -142,13 +142,46 @@ Compare:
 
 		call Log
 		call Log "Base:" localBase "<->" remoteHost":"remoteBase
-		call CompareDirectories
-	end
 
-	call close delete_local
-	call close delete_remote
-	call close copy2local
-	call close copy2remote
+		delete_local  = open(delete_local_name, "w")	/* delete from local directory	*/
+		delete_remote = open(delete_remote_name,"w")	/* delete from remote directory	*/
+		copy2local    = open(copy2local_name,   "w")		/* copy from remote to local	*/
+		copy2remote   = open(copy2remote_name,  "w")		/* copy from local to remote	*/
+
+		call CompareDirectories
+
+		call close delete_local
+		call close delete_remote
+		call close copy2local
+		call close copy2remote
+
+		/* Execute sync commands */
+		/* delete local */
+		if filesize(delete_local_name)>0 then do
+			say "<<<" RMFILES localBase delete_local_name
+			RMFILES localBase delete_local_name
+		end
+
+		/* delete remote */
+		if filesize(delete_remote_name)>0 then do
+			RCOPY delete_remote_name remoteHost":"delete_remote_name
+			say ">>>" RCMD RMFILES remoteBase delete_remote_name
+			RCMD RMFILES remoteBase delete_remote_name
+			if ^noremove then
+				RCMD "rm -f" delete_remote_name
+		end
+
+		/* copy from local to remote */
+		if filesize(copy2remote_name)>0 then
+			'rsync -avpP -e "ssh -C" --files-from='copy2remote_name localBase '"'ESC(remoteHost':'remoteBase)'"'
+
+		/* copy from remote to local */
+		if filesize(copy2local_name)>0 then
+			'rsync -avpP -e "ssh -C" --files-from='copy2local_name '"'ESC(remoteHost':'remoteBase)'"' localBase
+
+		if ^noremove then
+			"rm -f" delete_local_name delete_remote_name copy2local_name copy2remote_name
+	end
 
 	call Log "Total" trunc(totalSize/1024)"kb transfered."
 return
@@ -215,28 +248,15 @@ CompareDirectories:
 	end
 return
 
-/* --- MKDir --- *
-MKDir:
-	if arg(1)=="L" then do
-		call Log "+L: mkdir" arg(2)
-		cmd = "mkdir" ESC(localBase||arg(2))
-	end; else do
-		call Log "+R: mkdir" arg(2)
-		cmd = RCMD 'mkdir "'ESC(remoteBase||arg(2))'"'
-	end
-	call Exec cmd
-return
-*/
-
 /* --- RMDir --- */
 RMDir:
 	if arg(1)=="L" then do
 		call Log "-L: rm" arg(2)
-		call lineout delete_local, dir"/"local.l
+		call lineout delete_local, arg(2)
 		/*cmd = "rm -Rf" ESC(localBase||arg(2))*/
 	end; else do
 		call Log "-R: rm" arg(2)
-		call lineout delete_remote, dir"/"local.l
+		call lineout delete_remote, arg(2)
 		/*cmd = RCMD 'rm -Rf "'ESC(remoteBase||arg(2))'"'*/
 	end
 	/*call Exec cmd*/
@@ -329,9 +349,9 @@ Resolve:
 
 	say
 	if dir="" then
-		say "Dir: /"
+		say "Subdir: /"
 	else
-		say "Dir:" dir
+		say "Subdir:" dir
 
 	say "  L:" local.l "	"lt GMTime(timeLocal) subword(local.l.@INFO,2)
 	say "  R:" remote.r "	"rt GMTime(timeRemote) subword(remote.r.@INFO,2)
@@ -363,6 +383,9 @@ Resolve:
 
 	if _def='D' then _D="*"; else _D=" "
 	say "	"_D "d/D: Delete both"
+
+/*	if _def='D' then _D="*"; else _D=" "
+	say "	"_D "k/K: Keep both" */
 
 	do forever
 		parse pull action

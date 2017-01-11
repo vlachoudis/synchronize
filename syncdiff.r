@@ -17,21 +17,19 @@
  */
 
 parse arg host conffile filediff
-if host="" | conffile="" then call usage
+if host="" | conffile="" | filediff="" then call usage
 
 if host=='local' then
 	mode = "l"
 else
 	mode = 'r'
 
-/*>>>call load "/usr/local/lib/brexx/synclib.r"*/
-call load "/home/bnv/prg/synchronize/synclib.r"
+call load "/usr/local/lib/brexx/synclib.r"
+/*call load "/home/bnv/prg/synchronize/synclib.r"*/
 call SyncConfig
 
 filenew = "/tmp/_sync."host
 fileold = syncpath||host
-/*filediff = "/tmp/_diff."time('s')*/
-/*filediff = "/tmp/_diff."random()*/
 
 FILEINFO "-"mode "-o "filenew conffile
 if rc<>0 then do
@@ -62,11 +60,12 @@ end
 call close fc
 call close fdiff
 "rm -f" filenew".*"
-if mode=='R' then do
+/*
+if mode=='r' then do
 	GZIP filediff
 	filediff = filediff".gz"
 end
-/*say filediff*/
+*/
 return
 
 /* --- Usage --- */
@@ -83,8 +82,9 @@ CompareFiles: procedure expose filenew fileold fdiff
 	fold = open(fileold"."hash,"r")
 
 	if fnew<0 then do
-		say "ERROR:" fnew "opening file new="filenew
-		return
+		say "ERROR:" fnew "opening file new="filenew"."hash
+		exit
+		return hash
 	end
 
 	basenew = read(fnew)

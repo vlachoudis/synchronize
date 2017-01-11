@@ -167,9 +167,6 @@ int checkFile(char *fullpath)
 	filename = fullpath + initpath_length;
 	if (*filename==0)
 		filename=fullpath;
-#if __DEBUG>0
-	printf("checkFile \"%s\"",fullpath);
-#endif
 
 	while (pat) {
 		int match = !regexec(&(pat->regexp),filename,0,NULL,0);
@@ -245,7 +242,7 @@ void printInfo(struct stat *filestat, char *filename)
 	else
 	if (S_ISDIR(filestat->st_mode)) {
 		type = 'D';
-		nametoprint = filename+initpath_length;
+		nametoprint = filename+initpath_length+1;
 	} else
 		type = 'f';
 
@@ -381,10 +378,10 @@ void scanFile(void)
 	long before;
 
 	initpath_length = strlen(initpath);
-	if (initpath[initpath_length] == '/') {
+	if (initpath_length>0 && initpath[initpath_length-1] == '/') {
 		// remove trailing /
-		initpath[initpath_length] == 0;
 		initpath_length--;
+		initpath[initpath_length] = 0;
 	}
 	if (initpath_length>0) {
 		if (output_filename[0]) {

@@ -3,22 +3,23 @@ exit
 
 /* --- SyncConfig --- */
 SyncConfig:
-	syncpath = "/var/spool/sync"
-	syncpath = "/home/bnv/tmp"
-	logfile = "sync.log"
+	parse source . . prg .
+	PRGDIR = left(prg, lastpos("/",prg)-1)
+	PRGDIR = "/usr/local/bin"
+	/*PRGDIR = "/home/bnv/prg/synchronize"*/
 
-	RSH = "rsh"
-	RSH = "ssh"
-	/*RCOPY = "rsync -lpt"*/
-	RCOPY = "rcp -p"
+	SYNCPATH = "/var/spool/sync"
+	SYNCPATH = "/home/bnv/tmp"
+	LOGFILE = "sync.log"
+
+	RSH   = "ssh"
 	RCOPY = "scp -pC"
-	/*RCOPY = "scp -p"*/
-	GZIP = "gzip"
-	/*SYNCDIFF = "/usr/local/bin/syncdiff.r"
-	FILEINFO = "/usr/local/bin/fileinfo"*/
-	SYNCDIFF = "/home/bnv/prg/synchronize/syncdiff.r"
-	FILEINFO = "/home/bnv/prg/synchronize/fileinfo"
-	localhost = "hostname"()
+	GZIP  = "gzip"
+
+	SYNCDIFF = PRGDIR"/syncdiff.r"
+	FILEINFO = PRGDIR"/fileinfo"
+	RMFILES  = PRGDIR"/rmfiles"
+	LOCALHOST = "hostname"()
 
 	/* Allow time jitter of few sec */
 	timeJitter = 1	/* sec */

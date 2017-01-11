@@ -24,19 +24,24 @@ else
 	CFLAGS=-g -pg -I$(INC)
 	CLIBS=
 	DESTDIR=/usr/local/bin
+	LIBDIR=/usr/local/lib/brexx
 endif
 
 .c.o:
 	$(CC) -c $(CFLAGS) $<
 
-all: fileinfo
+all: fileinfo rmfiles
 
 fileinfo:	fileinfo.o
 	$(CC) -o $@ $< $(CLIBS)
-	#$(CP) fileinfo $(DESTDIR)
+
+rmfiles:	rmfiles.o
+	$(CC) -o $@ $< $(CLIBS)
 
 install:
-	$(CP) fileinfo $(DESTDIR)
+	$(CP) fileinfo rmfiles $(DESTDIR)
+	$(CP) sync.r syncdiff.r $(DESTDIR)
+	$(CP) synclib.r $(LIBDIR)
 
 .PHONY: tags
 tags:
