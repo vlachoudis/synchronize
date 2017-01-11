@@ -30,7 +30,7 @@
 typedef unsigned int	dword;
 
 #define __DEBUG	0
-#define SKIPBLANKS(p)	while (*(p) && isspace(*(p))) (p)++;
+#define SKIPBLANKS(p)	while (*(p) &&  isspace(*(p))) (p)++;
 #define SKIPWORD(p)	while (*(p) && !isspace(*(p))) (p)++;
 
 enum operator_enum {
@@ -52,11 +52,6 @@ typedef struct regexp_list_st {
 	struct	regexp_list_st	*next;
 } RegexpList;
 
-typedef struct leaf_st {
-	char	*str;
-	struct leaf_st *left, *right;
-} Leaf;
-
 /* --- Local Variables --- */
 int	initpath_length;
 char	initpath[FILENAME_MAX];
@@ -75,11 +70,11 @@ void usage()
 	printf("syntax: %s -[lr] -[-output name] <conf_file>\n",prgname);
 	printf("desc:\n");
 	printf("author:Vasilis.Vlachoudis@cern.ch\n");
-	printf("date: "__DATE__"\n");
+	printf("date:" __DATE__ "\n");
 	exit(0);
 } /* usage */
 
-/* --- hashValue --- */
+/** hashValue similar to brexx one */
 dword hashValue(char *s)
 {
 	dword hash = 0;
@@ -89,74 +84,6 @@ dword hashValue(char *s)
 	}
 	return hash;
 } /* hashValue */
-
-/* --- binAdd--- */
-Leaf *binAdd(Leaf *tree, char *str)
-{
-	int	leftTaken = FALSE;
-	Leaf	*thisLeaf=tree, *lastLeaf;
-
-	Leaf *leaf = (Leaf*)malloc(sizeof(Leaf));
-	leaf->str = strdup(str);
-	leaf->left = NULL;
-	leaf->right = NULL;
-
-	if (tree==NULL)
-		return leaf;
-
-	while (thisLeaf != NULL) {
-		int cmp = strcmp(str,thisLeaf->str);
-		lastLeaf = thisLeaf;
-		if (cmp < 0) {
-			thisLeaf = thisLeaf->left;
-			leftTaken = TRUE;
-		} else
-		if (cmp > 0) {
-			thisLeaf = thisLeaf->right;
-			leftTaken = FALSE;
-		} else {
-			fprintf(stderr,"ERROR The file %s exists twice on the same directory\n",str);
-			return NULL;
-		}
-	}
-
-#if __DEBUG>0
-		printf("+++ %s->%s = %s\n",lastLeaf->str,
-			leftTaken?"left":"right",leaf->str);
-#endif
-
-	if (leftTaken)
-		lastLeaf->left = leaf;
-	else
-		lastLeaf->right = leaf;
-
-	return tree;
-} /* binAdd*/
-
-/* --- binDel --- */
-void binDel(Leaf *tree)
-{
-	if (tree==NULL) return;
-	if (tree->left) binDel(tree->left);
-	if (tree->right) binDel(tree->right);
-	free(tree->str);
-	free(tree);
-} /* binDel */
-
-#if __DEBUG>0
-/* --- binPrint --- */
-void binPrint(Leaf *tree, int depth)
-{
-	int i;
-	if (tree==NULL)
-		return;
-	binPrint(tree->left,depth+3);
-	for (i=0; i<depth; i++)
-		putchar('-');
-	printf(" %s\n",tree->str);
-	binPrint(tree->right,depth+3);
-} /* binPrint */
-#endif
 
 /* --- checkFile ---- */
 int checkFile(char *fullpath)
@@ -224,16 +151,14 @@ void splitPath(char *fullpath, char *path, char *name)
  */
 void printInfo(struct stat *filestat, char *filename)
 {
-	struct	passwd	*pwd;
-	struct	group	*grp;
 	char	path[FILENAME_MAX];
 	char	name[FILENAME_MAX];
 	char	type;
 	char	*nametoprint;
 
 	splitPath(filename,path,name);
-	pwd = getpwuid(filestat->st_uid);
-	grp = getgrgid(filestat->st_gid);
+	//struct passwd* pwd = getpwuid(filestat->st_uid);
+	//struct group*  grp = getgrgid(filestat->st_gid);
 
 	nametoprint = name;
 
@@ -296,77 +221,54 @@ void fileInfo(char *filename)
 		printInfo(&filestat,filename);
 } /* fileInfo */
 
-/* --- scanTree --- */
-void scanTree(Leaf *tree, char *basedir, int dirs)
+/** scanList */
+void scanList(char *basedir, struct dirent **filelist, int n, bool dirs)
 {
-	char	filename[FILENAME_MAX];
-	struct	stat filestat;
-
-	if (tree==NULL)
-		return;
-
-	scanTree(tree->left,basedir,dirs);
-
-	// prepare full path
-	strcpy(filename,basedir);
-	strcat(filename,tree->str);
-
-	if (lstat(filename,&filestat)!=0)
-		return;
-
-	if (dirs) {
-		if (S_ISDIR(filestat.st_mode)) {
-			printInfo(&filestat,filename);
-			scanDirectory(filename);
-		}
-	} else {
-		if (!S_ISDIR(filestat.st_mode))
-			fileInfo(filename);
+	char filename[FILENAME_MAX];
+	strcpy(filename, basedir);
+	int len = strlen(filename);
+	if (len) {
+		filename[len++] = '/';
+		filename[len]   = 0;
 	}
 
-	scanTree(tree->right,basedir,dirs);
-} /* scanTree */
+	for (int i=0; i<n; i++) {
+		/* ignore . & .. */
+		if (!strcmp(filelist[i]->d_name,".") ||
+		    !strcmp(filelist[i]->d_name,".."))
+			continue;
+
+		strcpy(filename+len, filelist[i]->d_name);
+
+		struct	stat filestat;
+		if (lstat(filename,&filestat)!=0) continue;
+
+		if (dirs && S_ISDIR(filestat.st_mode)) {
+			printInfo(&filestat,filename);
+			scanDirectory(filename);
+		} else
+		if (!dirs && !S_ISDIR(filestat.st_mode))
+			fileInfo(filename);
+	}
+} // scanList
 
 /* --- scanDirectory --- */
 void scanDirectory(char *basedir)
 {
-	DIR	*dir;
-	struct	dirent	*dirinfo;
-	int	len = strlen(basedir);
-	Leaf	*tree = NULL;
-
-	if (!checkFile(basedir))
-		return;
-
-//	fprintf(fout,"Dir: %s\n",basedir+initpath_length);
-
-	dir = opendir(basedir);
-	if (dir==NULL) {
-		fprintf(stderr,"Error %d on dir: %s\n",errno,basedir);
+	if (!checkFile(basedir)) return;
+	struct dirent **filelist;
+	int n = scandir(basedir, &filelist, 0, alphasort);
+	if (n < 0) {
+		perror("scandir");
 		return;
 	}
 
-	while ((dirinfo=readdir(dir))!=NULL) {
-		if (!strcmp(dirinfo->d_name,"."))
-			continue;
-		if (!strcmp(dirinfo->d_name,".."))
-			continue;
-		tree = binAdd(tree,dirinfo->d_name);
-	}
-	closedir(dir);
+	scanList(basedir, filelist, n, false);
+	scanList(basedir, filelist, n, true);
 
-#if __DEBUG>0
-	binPrint(tree,0);
-#endif
-
-	if (basedir[len-1]!='/') {
-		basedir[len]='/';
-		basedir[len+1]=0;
-	}
-	scanTree(tree,basedir,FALSE);	// only files
-	scanTree(tree,basedir,TRUE);	// only directories
-
-	binDel(tree);
+	/* free filelist */
+	for (int i=0; i<n; i++) free(filelist[i]);
+	free(filelist);
 } /* scanDirectory */
 
 /* --- scanFile --- */

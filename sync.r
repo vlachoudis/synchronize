@@ -2,8 +2,7 @@
 /*
  * sync.r - Synchronize files
  */
-noexec = 0
-noremove = 0
+nothing = 0	/* do nothing */
 signal on error
 
 Version = "0.2"
@@ -13,8 +12,7 @@ parse arg args
 args = space(args)
 
 if word(args,1)=="-n" then do
-	noexec=1
-	noremove=1
+	nothing = 1	/* do nothing */
 	args = subword(args,2)
 end
 
@@ -54,7 +52,7 @@ if rc<>0 then call ERROR "RC="RC "running local syncdiff.r"
 call Log ">>>     Elapsed" format(time('r'),,1)'s'
 
 call Log ">>> Remote syncdiff..."
-remotediff = "/tmp/_remotediff."time("s")
+remotediff = "/tmp/_remotediff."tempext
 remoteconf = "/tmp/_"localHost".conf."tempext
 RCOPY conffile remoteHost":"remoteconf
 RCMD SYNCDIFF localHost remoteconf remotediff
@@ -95,21 +93,25 @@ call close fremote
 
 /* update fileinfos */
 call Log ,"N"
-call Log ">>> Update directory structure"
-call time 'r'
-FILEINFO "-l -o" syncpath||"local" conffile
-if RC<>0 then call ERROR "RC="RC "Executing fileinfo command"
-RCMD FILEINFO "-r -o" syncpath||localHost remoteconf
-if RC<>0 then call ERROR "RC="RC "Executing remote fileinfo command"
-call Log ">>>     Elapsed" format(time('r'),,1)'s'
-
 /* remove diff files */
-if ^noremove then do
+if ^nothing then do
+	call Log ">>> Update directory structure"
+	call time 'r'
+
+	call Log ">>> Local host"
+	FILEINFO "-l -o" syncpath||"local" conffile
+	if RC<>0 then call ERROR "RC="RC "Executing fileinfo command"
+
+	call Log ">>> Remote host"
+	RCMD FILEINFO "-r -o" syncpath||localHost remoteconf
+	if RC<>0 then call ERROR "RC="RC "Executing remote fileinfo command"
+	call Log ">>>     Elapsed" format(time('r'),,1)'s'
+
 	call Log ">>> Cleanup"
 	"rm -f" localdiff remotediff remoteconf remotediff
 	RCMD "rm -f" remoteconf remotediff".gz"
+	call Log ">>>     Elapsed" format(time('r'),,1)'s'
 end
-call Log ">>>     Elapsed" format(time('r'),,1)'s'
 
 call close flog
 return
@@ -155,6 +157,9 @@ Compare:
 		call close copy2local
 		call close copy2remote
 
+		/* If do nothing is activated then ignore all following commands */
+		if nothing then iterate
+
 		/* Execute sync commands */
 		/* delete local */
 		if filesize(delete_local_name)>0 then do
@@ -167,7 +172,7 @@ Compare:
 			RCOPY delete_remote_name remoteHost":"delete_remote_name
 			say ">>>" RCMD RMFILES remoteBase delete_remote_name
 			RCMD RMFILES remoteBase delete_remote_name
-			if ^noremove then
+			if ^nothing then
 				RCMD "rm -f" delete_remote_name
 		end
 
@@ -179,8 +184,7 @@ Compare:
 		if filesize(copy2local_name)>0 then
 			'rsync -avpP -e "ssh -C" --files-from='copy2local_name '"'ESC(remoteHost':'remoteBase)'"' localBase
 
-		if ^noremove then
-			"rm -f" delete_local_name delete_remote_name copy2local_name copy2remote_name
+		"rm -f" delete_local_name delete_remote_name copy2local_name copy2remote_name
 	end
 
 	call Log "Total" trunc(totalSize/1024)"kb transfered."
@@ -487,7 +491,7 @@ return out
 Exec: procedure expose flog
 	trace o
 	parse arg cmd
-	if ^value("noexec",,0) then do
+	if ^value("nothing",,0) then do
 		address command cmd
 		if RC<>0 then
 			call Log "ERROR: RC="RC "Executing:" cmd
@@ -498,6 +502,6 @@ return
 Log: procedure expose flog
 	parse arg text,option
 	if option^=="N" then say text
-	if ^value("noexec",,0) then
+	if ^value("nothing",,0) then
 		call lineout(flog,date() time()":" text)
 return

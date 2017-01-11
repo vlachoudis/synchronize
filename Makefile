@@ -14,20 +14,20 @@ ifeq (${OS},android)
 	ANDARM   := $(ANDBIN)/arm-linux-androideabi
 	ANDLINKER = /system/bin/linker
 
-	CC       := $(ANDARM)-gcc
+	CC       := $(ANDARM)-g++
 	CPP      := $(ANDARM)-cpp
 	CFLAGS   := -O -fpic -rdynamic -DANDROID -I$(ANDINC)
 	CLIBS    := -L$(ANDLIB) -Wl,-rpath-link=$(ANDLIB),-dynamic-linker=$(ANDLINKER) -nostdlib -lc -ldl -lm
 else
-	CC=gcc
-	CP=cp
-	CFLAGS=-g
-	CLIBS=
-	DESTDIR=/usr/local/bin
-	LIBDIR=/usr/local/lib/brexx
+	CC      = g++
+	CP      = cp
+	CFLAGS  = -g -O -Wall
+	CLIBS   =
+	DESTDIR = /usr/local/bin
+	LIBDIR  = /usr/local/lib/brexx
 endif
 
-.c.o:
+.cc.o:
 	$(CC) -c $(CFLAGS) $<
 
 all: fileinfo rmfiles
@@ -36,6 +36,9 @@ fileinfo:	fileinfo.o
 	$(CC) -o $@ $< $(CLIBS)
 
 rmfiles:	rmfiles.o
+	$(CC) -o $@ $< $(CLIBS)
+
+dirtest:	dirtest.o
 	$(CC) -o $@ $< $(CLIBS)
 
 install:

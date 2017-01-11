@@ -22,16 +22,14 @@ int remove_directory(const char *path)
 		r = 0;
 		while (!r && (p=readdir(d))) {
 			int r2 = -1;
-			char *filename;
-			size_t len;
 			/* Skip the names "." and ".." as we don't want to recurse on them. */
 			if (!strcmp(p->d_name, ".") || !strcmp(p->d_name, "..")) continue;
-			len = path_len + strlen(p->d_name) + 2;
-			filename = malloc(len);
+			size_t len = path_len + strlen(p->d_name) + 2;
+			char* filename = (char*)malloc(len);
 			if (filename) {
 				struct stat statbuf;
 				snprintf(filename, len, "%s/%s", path, p->d_name);
-				if (!stat(filename, &statbuf))
+				if (!stat(filename, &statbuf)) {
 					if (S_ISDIR(statbuf.st_mode))
 						r2 = remove_directory(filename);
 					else {
@@ -40,6 +38,7 @@ int remove_directory(const char *path)
 						if (r2)
 							fprintf(stderr,"Error removing \"%s\"\n",filename);
 					}
+				}
 				free(filename);
 			}
 			r = r2;
@@ -53,9 +52,6 @@ int remove_directory(const char *path)
 /* --- main --- */
 int main(int ac, char *av[])
 {
-	size_t lenbase;
-	char filename[1024];
-	FILE* fin=stdin;
 
 	if (ac==1) {
 		fprintf(stderr,"syntax: %s <base> [<fromfile>]\n",av[0]);
@@ -65,21 +61,24 @@ int main(int ac, char *av[])
 		exit(0);
 	}
 
+	char filename[FILENAME_MAX];
 	strcpy(filename, av[1]);
-	lenbase = strlen(filename);
+	size_t lenbase = strlen(filename);
 	/* add a trailing / if needed */
 	if (filename[lenbase-1]!='/') {
 		filename[lenbase++] = '/';
 		filename[lenbase] = 0;
 	}
 
-	if (ac==3)
+	FILE* fin=stdin;
+	if (ac==3) {
 		fin = fopen(av[2],"r");
 		if (!fin) {
 			fprintf(stderr,"Cannot open file \"%s\"\n",av[2]);
 			return -1;
 			exit(-1);
 		}
+	}
 
 	while (fgets(filename+lenbase, sizeof(filename)-lenbase, fin)!=NULL) {
 		struct stat statbuf;
