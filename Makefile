@@ -38,5 +38,9 @@ fileinfo:	fileinfo.o
 install:
 	$(CP) fileinfo $(DESTDIR)
 
+.PHONY: tags
+tags:
+	ctags *.c *.r
+
 clean:
 	rm -f fileinfo *.o core.*
