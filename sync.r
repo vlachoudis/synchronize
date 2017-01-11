@@ -6,7 +6,7 @@ noexec = 0
 noremove = 0
 signal on error
 
-Version = "0.1"
+Version = "0.2"
 Author = "Vasilis.Vlachoudis@cern.ch"
 
 parse arg args
