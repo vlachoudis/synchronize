@@ -1,5 +1,20 @@
 #!/usr/local/bin/rexx
-/* Compare two sync files */
+/* Compare two sync files and create a diff file with all files and a flag on the change
+ * diff file format
+ * <flag> <unixtime> <size> <user> <group> <filename>
+ * flag:
+ *   f - regular file no change since last time
+ *   D - regular directory no change
+ *   n - new file
+ *   N - new directory
+ *   c - file changed since last time
+ *   e - erased(deleted) file
+ *   E - erased(deleted) directory (with all subdirs and files)
+ *   i - ignored file
+ *   I - ignored directory
+ *
+ * return on stdout the location of the temporary file created
+ */
 
 parse arg host conffile
 if host="" | conffile="" then call usage
