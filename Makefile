@@ -21,7 +21,7 @@ ifeq (${OS},android)
 else
 	CC=gcc
 	CP=cp
-	CFLAGS=-g -pg -I$(INC)
+	CFLAGS=-g
 	CLIBS=
 	DESTDIR=/usr/local/bin
 	LIBDIR=/usr/local/lib/brexx

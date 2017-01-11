@@ -9,7 +9,6 @@ SyncConfig:
 	/*PRGDIR = "/home/bnv/prg/synchronize"*/
 
 	SYNCPATH = "/var/spool/sync"
-	SYNCPATH = "/home/bnv/tmp"
 	LOGFILE = "sync.log"
 
 	RSH   = "ssh"
