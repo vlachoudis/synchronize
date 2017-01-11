@@ -375,7 +375,7 @@ void parseFile(char *conf_filename)
 		char	line[FILENAME_MAX];
 		char	*pch;
 
-		fgets(line,sizeof(line)-1,fin);
+		if (fgets(line,sizeof(line)-1,fin)==NULL) break;
 		if (feof(fin)) break;
 
 		line[strlen(line)-1] = 0;
