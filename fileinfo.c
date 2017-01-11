@@ -1,6 +1,9 @@
 /*
- * $Id: fileinfo.c,v 1.1 2015/01/15 09:23:35 bnv Exp $
+ * $Id: fileinfo.c,v 1.2 2017/01/11 08:29:42 bnv Exp $
  * $Log: fileinfo.c,v $
+ * Revision 1.2  2017/01/11 08:29:42  bnv
+ * Long pointers for 64bit
+ *
  * Revision 1.1  2015/01/15 09:23:35  bnv
  * Initial revision
  *
@@ -8,6 +11,7 @@
 
 #include <pwd.h>
 #include <grp.h>
+#include <ctype.h>
 #include <errno.h>
 #include <regex.h>
 #include <stdio.h>
@@ -197,7 +201,7 @@ void splitPath(char *fullpath, char *path, char *name)
 		*path = 0;
 		strcpy(name,fullpath);
 	} else {
-		int n = (int)((dword)ptr-(dword)fullpath);
+		int n = (int)((long)ptr-(long)fullpath);
 		if (n-initpath_length>=0) {
 			memcpy(path,fullpath+initpath_length,
 				n-initpath_length);
@@ -259,7 +263,7 @@ void printInfo(struct stat *filestat, char *filename)
 		filename, path, name, nametoprint);
 	*/
 
-	fprintf(fout,"%c %ld %d %s %s %s\n",
+	fprintf(fout,"%c %ld %ld %s %s %s\n",
 		type,
 #ifdef ANDROID
 		filestat->st_mtime,
@@ -397,7 +401,7 @@ void scanFile(void)
 		before = tv.tv_sec;
 		fileInfo(initpath);
 		gettimeofday(&tv, &tz);
-		fprintf(stderr,"%ds\n",tv.tv_sec-before);
+		fprintf(stderr,"%lds\n",tv.tv_sec-before);
 		if (fout != stdout)
 			fclose(fout);
 	}
@@ -541,7 +545,7 @@ void parseFile(char *conf_filename)
 } /* parseFile */
 
 /* --- main --- */
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	int	c;
 	prgname = argv[0];
