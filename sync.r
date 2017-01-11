@@ -44,48 +44,31 @@ call Log "sync.r V"Version Author
 /* local vars */
 RCMD  = RSH remotehost
 remoteconf = "/tmp/"localhost".conf."time("s")
-ResolveDefault = "n"
 
 /* Find the changes in the remote & local hosts */
 call Log ">>> Local syncdiff..."
 call time 'r'
-/*say "***" SYNCDIFF "local" conffile*/
-SYNCDIFF "local" conffile "(stack"
-if queued()==1 then
-	parse pull localdiff
-else do
-	do queued()
-		parse pull line
-		say line
-	end
-	call ERROR "RC="RC "running local syncdiff.r"
-end
+localdiff = "/tmp/_diff."random()
+say SYNCDIFF "local" conffile localdiff
+SYNCDIFF "local" conffile localdiff
+if rc<>0 then call ERROR "RC="RC "running local syncdiff.r"
 call Log ">>>     Elapsed" format(time('r'),,1)'s'
 
 call Log ">>> Remote syncdiff..."
+remotediff = "/tmp/_remotediff."random()
 RCOPY conffile remotehost":"remoteconf
-/*say "***" RCMD SYNCDIFF localhost remoteconf*/
-RCMD SYNCDIFF localhost remoteconf "(stack"
-if queued()==1 then
-	parse pull remotediff
-else do
-	do queued()
-		parse pull line
-		say line
-	end
-	call ERROR "RC="RC "running remote" remotehost":syncdiff.r"
-end
+RCMD SYNCDIFF localhost remoteconf remotediff
+if rc<>0 then call ERROR "RC="RC "running remote" remotehost":syncdiff.r"
 call Log ">>>     Elapsed" format(time('r'),,1)'s'
 
-rmtdiff = "/tmp/_remote-diffs."time("s")
 call Log ">>> Transfer compressed remote syncdiff file..."
 RCMD GZIP remotediff
-RCOPY remotehost":"remotediff".gz" rmtdiff".gz"
-GZIP "-d" rmtdiff".gz"
+RCOPY remotehost":"remotediff".gz" remotediff".gz"
+GZIP "-d" remotediff".gz"
 call Log ">>>     Elapsed" format(time('r'),,1)'s'
 
-flocal = open(localdiff,"r")
-fremote =  open(rmtdiff,"r")
+flocal  = open(localdiff, "r")
+fremote = open(remotediff,"r")
 
 if flocal<0 | fremote<0 then
 	call ERROR "Opening file Local="flocal "Remote="fremote
@@ -104,6 +87,7 @@ end
 call Log "+++ End of" conffile "+++","N"
 
 /* Compare the directories and files */
+ResolveDefault = "n"
 call Compare
 
 call close flocal
@@ -123,7 +107,7 @@ call Log ">>>     Elapsed" format(time('r'),,1)'s'
 /* remove diff files */
 if ^noremove then do
 	call Log ">>> Cleanup"
-	"rm -f" localdiff remotediff remoteconf rmtdiff
+	"rm -f" localdiff remotediff remoteconf remotediff
 	RCMD "rm -f" remoteconf remotediff".gz"
 end
 call Log ">>>     Elapsed" format(time('r'),,1)'s'
@@ -143,6 +127,11 @@ Compare:
 	remote. = ""
 	totalSize = 0
 
+	delete_local  = open("delete.local","w")	/* delete from local directory	*/
+	delete_remote = open("delete.remote","w")	/* delete from remote directory	*/
+	copy2local    = open("copy2local","w")		/* copy from remote to local	*/
+	copy2remote   = open("copy2remote","w")		/* copy from local to remote	*/
+
 	do forever
 		localBase = ""
 		remoteBase = ""
@@ -155,6 +144,11 @@ Compare:
 		call Log "Base:" localBase "<->" remoteHost":"remoteBase
 		call CompareDirectories
 	end
+
+	call close delete_local
+	call close delete_remote
+	call close copy2local
+	call close copy2remote
 
 	call Log "Total" trunc(totalSize/1024)"kb transfered."
 return
@@ -190,7 +184,7 @@ CompareDirectories:
 				say "  local:" local.1 lt local.1.@info
 				say "  remote:" remote.1 rt remote.1.@info
 				pull
-		end; else  do
+		end; else do
 			/* Directory names are the same */
 			/* Possible types D,N,E,I */
 			select
@@ -221,9 +215,36 @@ CompareDirectories:
 	end
 return
 
+/* --- MKDir --- *
+MKDir:
+	if arg(1)=="L" then do
+		call Log "+L: mkdir" arg(2)
+		cmd = "mkdir" ESC(localBase||arg(2))
+	end; else do
+		call Log "+R: mkdir" arg(2)
+		cmd = RCMD 'mkdir "'ESC(remoteBase||arg(2))'"'
+	end
+	call Exec cmd
+return
+*/
+
+/* --- RMDir --- */
+RMDir:
+	if arg(1)=="L" then do
+		call Log "-L: rm" arg(2)
+		call lineout delete_local, dir"/"local.l
+		/*cmd = "rm -Rf" ESC(localBase||arg(2))*/
+	end; else do
+		call Log "-R: rm" arg(2)
+		call lineout delete_remote, dir"/"local.l
+		/*cmd = RCMD 'rm -Rf "'ESC(remoteBase||arg(2))'"'*/
+	end
+	/*call Exec cmd*/
+return
+
 /* --- CopyLocalDir --- */
 CopyLocalDir:
-	call MKDir "R",local.1
+	/*call MKDir "R",local.1*/
 	dir = local.1
 	do l=2 to local.0
 		call CopyFrom "L",dir"/"local.l
@@ -232,7 +253,7 @@ return
 
 /* --- CopyRemoteDir --- */
 CopyRemoteDir:
-	call MKDir "L",remote.1
+	/*call MKDir "L",remote.1*/
 	dir = remote.1
 	do r=2 to remote.0
 		call CopyFrom "R",dir"/"remote.r
@@ -377,45 +398,23 @@ Resolve:
 	ResolveDefault = action
 return
 
-/* --- MKDir --- */
-MKDir:
-	if arg(1)=="L" then do
-		call Log "+L: mkdir" arg(2)
-		cmd = "mkdir" ESC(localBase||arg(2))
-	end; else do
-		call Log "+R: mkdir" arg(2)
-		cmd = RCMD 'mkdir "'ESC(remoteBase||arg(2))'"'
-	end
-	call Exec cmd
-return
-
-/* --- RMDir --- */
-RMDir:
-	if arg(1)=="L" then do
-		call Log "-L: rm" arg(2)
-		cmd = "rm -Rf" ESC(localBase||arg(2))
-	end; else do
-		call Log "-R: rm" arg(2)
-		cmd = RCMD 'rm -Rf "'ESC(remoteBase||arg(2))'"'
-	end
-	call Exec cmd
-return
-
 /* --- CopyFrom --- */
 CopyFrom:
 	call ReportDir
 	if arg(1)=="L" then do
 		size = word(local.l.@INFO,2)
 		_logmsg = "  L->R:" basename(arg(2))
-		cmd = RCOPY ESC(localBase||arg(2)) '"'ESC(remoteHost':'remoteBase||arg(2))'"'
+		call lineout copy2remote,arg(2)
+		/*cmd = RCOPY ESC(localBase||arg(2)) '"'ESC(remoteHost':'remoteBase||arg(2))'"'*/
 	end; else do
 		size = word(remote.r.@INFO,2)
 		_logmsg = "  R->L:" basename(arg(2))
-		cmd = RCOPY '"'ESC(remoteHost':'remoteBase||arg(2))'"' ESC(localBase||arg(2))
+		call lineout copy2local,arg(2)
+		/*cmd = RCOPY '"'ESC(remoteHost':'remoteBase||arg(2))'"' ESC(localBase||arg(2))*/
 	end
 	call Log overlay(right(size,10),_logmsg,40)
 	totalSize = totalSize + size
-	call Exec cmd
+	/*call Exec cmd*/
 return
 
 /* --- Delete --- */
@@ -423,12 +422,14 @@ Delete:
 	call ReportDir
 	if arg(1)=="L" then do
 		call Log "    -L:" basename(arg(2))
-		cmd = "rm -f" ESC(localBase||arg(2))
+		call lineout delete_local,arg(2)
+		/*cmd = "rm -f" ESC(localBase||arg(2))*/
 	end; else do
 		call Log "    -R:" basename(arg(2))
-		cmd = RCMD 'rm -f "'ESC(remoteBase||arg(2))'"'
+		call lineout delete_remote,arg(2)
+		/*cmd = RCMD 'rm -f "'ESC(remoteBase||arg(2))'"'*/
 	end
-	call Exec cmd
+	/*call Exec cmd*/
 return
 
 /* --- ReportDir --- */

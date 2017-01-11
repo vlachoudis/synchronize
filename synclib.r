@@ -4,6 +4,7 @@ exit
 /* --- SyncConfig --- */
 SyncConfig:
 	syncpath = "/var/spool/sync"
+	syncpath = "/home/bnv/tmp"
 	logfile = "sync.log"
 
 	RSH = "rsh"
@@ -13,8 +14,10 @@ SyncConfig:
 	RCOPY = "scp -pC"
 	/*RCOPY = "scp -p"*/
 	GZIP = "gzip"
-	SYNCDIFF = "/usr/local/bin/syncdiff.r"
-	FILEINFO = "/usr/local/bin/fileinfo"
+	/*SYNCDIFF = "/usr/local/bin/syncdiff.r"
+	FILEINFO = "/usr/local/bin/fileinfo"*/
+	SYNCDIFF = "/home/bnv/prg/synchronize/syncdiff.r"
+	FILEINFO = "/home/bnv/prg/synchronize/fileinfo"
 	localhost = "hostname"()
 
 	/* Allow time jitter of few sec */
