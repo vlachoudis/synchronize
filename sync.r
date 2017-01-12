@@ -2,7 +2,7 @@
 /*
  * sync.r - Synchronize files
  */
-nothing = 0	/* do nothing */
+nothing = 0	/* don't do nothing */
 signal on error
 
 Version = "0.2"
@@ -163,27 +163,41 @@ Compare:
 		/* Execute sync commands */
 		/* delete local */
 		if filesize(delete_local_name)>0 then do
-			say "<<<" RMFILES localBase delete_local_name
-			RMFILES localBase delete_local_name
+			call Log "Cmd:" RMFILES localBase delete_local_name
+			call flush flog
+			RMFILES localBase delete_local_name "|"TEE logfile
+			call seek flog,0,"EOF"
 		end
 
 		/* delete remote */
 		if filesize(delete_remote_name)>0 then do
-			RCOPY delete_remote_name remoteHost":"delete_remote_name
-			say ">>>" RCMD RMFILES remoteBase delete_remote_name
-			RCMD RMFILES remoteBase delete_remote_name
+			call Log "Cmd:" RCOPY delete_remote_name remoteHost":"delete_remote_name
+			call Log "Cmd:" RCMD RMFILES remoteBase delete_remote_name
+			call flush flog
+			RCOPY delete_remote_name remoteHost":"delete_remote_name "|"TEE logfile
+			RCMD RMFILES remoteBase delete_remote_name "|"TEE logfile
 			if ^nothing then
 				RCMD "rm -f" delete_remote_name
+			call seek flog,0,"EOF"
 		end
 
 		/* copy from local to remote */
-		if filesize(copy2remote_name)>0 then
-			'rsync -avpP -e "ssh -C" --files-from='copy2remote_name localBase '"'ESC(remoteHost':'remoteBase)'"'
+		if filesize(copy2remote_name)>0 then do
+			call Log "Cmd:" RSYNC '--files-from='copy2remote_name localBase '"'ESC(remoteHost':'remoteBase)'"'
+			call flush flog
+			RSYNC '--files-from='copy2remote_name localBase '"'ESC(remoteHost':'remoteBase)'"' "|"TEE logfile
+			call seek flog,0,"EOF"
+		end
 
 		/* copy from remote to local */
-		if filesize(copy2local_name)>0 then
-			'rsync -avpP -e "ssh -C" --files-from='copy2local_name '"'ESC(remoteHost':'remoteBase)'"' localBase
+		if filesize(copy2local_name)>0 then do
+			call Log "Cmd:" RSYNC '--files-from='copy2local_name '"'ESC(remoteHost':'remoteBase)'"' localBase
+			call flush flog
+			RSYNC '--files-from='copy2local_name '"'ESC(remoteHost':'remoteBase)'"' localBase "|"TEE logfile
+			call seek flog,0,"EOF"
+		end
 
+		/* clean up */
 		"rm -f" delete_local_name delete_remote_name copy2local_name copy2remote_name
 	end
 

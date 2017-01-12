@@ -1,12 +1,6 @@
 /*
- * $Id: fileinfo.c,v 1.2 2017/01/11 08:29:42 bnv Exp $
- * $Log: fileinfo.c,v $
- * Revision 1.2  2017/01/11 08:29:42  bnv
- * Long pointers for 64bit
- *
- * Revision 1.1  2015/01/15 09:23:35  bnv
- * Initial revision
- *
+ * Author: Vasilis.Vlachoudis@cern.ch
+ * Date: Sometime in 2000
  */
 
 #include <pwd.h>
@@ -157,8 +151,8 @@ void printInfo(struct stat *filestat, char *filename)
 	char	*nametoprint;
 
 	splitPath(filename,path,name);
-	//struct passwd* pwd = getpwuid(filestat->st_uid);
-	//struct group*  grp = getgrgid(filestat->st_gid);
+	struct passwd* pwd = getpwuid(filestat->st_uid);
+	struct group*  grp = getgrgid(filestat->st_gid);
 
 	nametoprint = name;
 
@@ -193,9 +187,8 @@ void printInfo(struct stat *filestat, char *filename)
 		filestat->st_mtim.tv_sec,
 #endif
 		(long)filestat->st_size,
-		"bnv", "dr",
-//		((pwd==NULL)?"none":pwd->pw_name),
-//		((grp==NULL)?"none":grp->gr_name),
+		((pwd==NULL)?"none":pwd->pw_name),
+		((grp==NULL)?"none":grp->gr_name),
 		nametoprint);
 } /* printInfo */
 

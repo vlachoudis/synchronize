@@ -14,6 +14,8 @@ SyncConfig:
 	RSH   = "ssh"
 	RCOPY = "scp -pC"
 	GZIP  = "gzip"
+	RSYNC = 'rsync -avpP -e "ssh -C"'
+	TEE   = "tee -a"
 
 	SYNCDIFF = PRGDIR"/syncdiff.r"
 	FILEINFO = PRGDIR"/fileinfo"
