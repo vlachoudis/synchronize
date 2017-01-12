@@ -17,10 +17,13 @@ SyncConfig:
 	RSYNC = 'rsync -avpP -e "ssh -C"'
 	TEE   = "tee -a"
 
-	SYNCDIFF = PRGDIR"/syncdiff.r"
-	FILEINFO = PRGDIR"/fileinfo"
-	RMFILES  = PRGDIR"/rmfiles"
+	SYNCDIFF  = PRGDIR"/syncdiff.r"
+	FILEINFO  = PRGDIR"/fileinfo"
+	RMFILES   = PRGDIR"/rmfiles"
 	LOCALHOST = "hostname"()
+
+	CHKUSER   = 0
+	CHKGROUP  = 0
 
 	/* Allow time jitter of few sec */
 	timeJitter = 1	/* sec */
@@ -38,8 +41,11 @@ ReadDir: procedure
 	call value array"0","0",-1
 	n = 0
 
-	pos = seek(f)
+	pos  = seek(f)
 	line = read(f)
+
+	CHKUSER  = value("CHKUSER",,0)
+	CHKGROUP = value("CHKGROUP",,0)
 
 	/* Check if the base has changed */
 	if word(line,1)=="Base:" then do
@@ -64,7 +70,13 @@ ReadDir: procedure
 	end
 	n = 1
 	call value array||n,file,-1
-	call value array||n".@INFO",date size user group,-1
+	info = date size
+	if CHKUSER	then info = info user
+			else info = info "-"
+	if CHKGROUP	then info = info group
+			else info = info "-"
+	call value array||n".@INFO",info,-1
+	/*call value array||n".@INFO",date size user group,-1*/
 	call value array||n".@TYPE",type,-1
 
 	do forever
@@ -78,7 +90,13 @@ ReadDir: procedure
 		end
 		n = n + 1
 		call value array||n,file,-1
-		call value array||n".@INFO",date size user group,-1
+		info = date size
+		if CHKUSER	then info = info user
+				else info = info "-"
+		if CHKGROUP	then info = info group
+				else info = info "-"
+		call value array||n".@INFO",info,-1
+		/*call value array||n".@INFO",date size user group,-1*/
 		call value array||n".@TYPE",type,-1
 	end
 	call value array"0",n,-1
