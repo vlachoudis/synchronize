@@ -60,12 +60,6 @@ end
 call close fc
 call close fdiff
 "rm -f" filenew".*"
-/*
-if mode=='r' then do
-	GZIP filediff
-	filediff = filediff".gz"
-end
-*/
 return
 
 /* --- Usage --- */

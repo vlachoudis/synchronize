@@ -12,8 +12,7 @@ SyncConfig:
 	LOGFILE = "sync.log"
 
 	RSH   = "ssh"
-	RCOPY = "scp -pC"
-	GZIP  = "gzip"
+	RCOPY = "scp -C"
 	RSYNC = 'rsync -avpP -e "ssh -C"'
 	TEE   = "tee -a"
 

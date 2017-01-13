@@ -1,13 +1,15 @@
 #!/usr/local/bin/rexx
 /*
  * sync.r - Synchronize files
+ * Author  = "Vasilis.Vlachoudis@cern.ch"
+ * Date: 13/01/2017
  */
-nothing = 0	/* don't do nothing */
 signal on error
 
 Version = "0.2"
-Author = "Vasilis.Vlachoudis@cern.ch"
+Author  = "Vasilis.Vlachoudis@cern.ch"
 
+nothing = 0	/* dont do nothing */
 parse arg args
 args = space(args)
 
@@ -59,10 +61,8 @@ RCMD SYNCDIFF localHost remoteconf remotediff
 if rc<>0 then call ERROR "RC="RC "running remote" remoteHost":syncdiff.r"
 call Log ">>>     Elapsed" format(time('r'),,1)'s'
 
-call Log ">>> Transfer compressed remote syncdiff file..."
-RCMD GZIP remotediff
-RCOPY remoteHost":"remotediff".gz" remotediff".gz"
-GZIP "-d" remotediff".gz"
+call Log ">>> Transfer remote syncdiff file..."
+RCOPY remoteHost":"remotediff remotediff
 call Log ">>>     Elapsed" format(time('r'),,1)'s'
 
 flocal  = open(localdiff, "r")
@@ -271,18 +271,14 @@ RMDir:
 	if arg(1)=="L" then do
 		call Log "-L: rm" arg(2)
 		call lineout delete_local, arg(2)
-		/*cmd = "rm -Rf" ESC(localBase||arg(2))*/
 	end; else do
 		call Log "-R: rm" arg(2)
 		call lineout delete_remote, arg(2)
-		/*cmd = RCMD 'rm -Rf "'ESC(remoteBase||arg(2))'"'*/
 	end
-	/*call Exec cmd*/
 return
 
 /* --- CopyLocalDir --- */
 CopyLocalDir:
-	/*call MKDir "R",local.1*/
 	dir = local.1
 	do l=2 to local.0
 		call CopyFrom "L",dir"/"local.l
@@ -291,7 +287,6 @@ return
 
 /* --- CopyRemoteDir --- */
 CopyRemoteDir:
-	/*call MKDir "L",remote.1*/
 	dir = remote.1
 	do r=2 to remote.0
 		call CopyFrom "R",dir"/"remote.r
@@ -446,16 +441,13 @@ CopyFrom:
 		size = word(local.l.@INFO,2)
 		_logmsg = "  L->R:" basename(arg(2))
 		call lineout copy2remote,arg(2)
-		/*cmd = RCOPY ESC(localBase||arg(2)) '"'ESC(remoteHost':'remoteBase||arg(2))'"'*/
 	end; else do
 		size = word(remote.r.@INFO,2)
 		_logmsg = "  R->L:" basename(arg(2))
 		call lineout copy2local,arg(2)
-		/*cmd = RCOPY '"'ESC(remoteHost':'remoteBase||arg(2))'"' ESC(localBase||arg(2))*/
 	end
 	call Log overlay(right(size,10),_logmsg,40)
 	totalSize = totalSize + size
-	/*call Exec cmd*/
 return
 
 /* --- Delete --- */
@@ -464,13 +456,10 @@ Delete:
 	if arg(1)=="L" then do
 		call Log "    -L:" basename(arg(2))
 		call lineout delete_local,arg(2)
-		/*cmd = "rm -f" ESC(localBase||arg(2))*/
 	end; else do
 		call Log "    -R:" basename(arg(2))
 		call lineout delete_remote,arg(2)
-		/*cmd = RCMD 'rm -f "'ESC(remoteBase||arg(2))'"'*/
 	end
-	/*call Exec cmd*/
 return
 
 /* --- ReportDir --- */
