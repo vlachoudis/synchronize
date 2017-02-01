@@ -28,8 +28,8 @@ SyncConfig:
 	timeJitter = 1	/* sec */
 
 	/* correct variables */
-	if right(syncpath,1)^='/' then syncpath=syncpath'/'
-	logfile = syncpath||logfile
+	if right(SYNCPATH,1)^='/' then SYNCPATH=SYNCPATH'/'
+	logfile = SYNCPATH||logfile
 return
 
 /* --- ReadDir --- */

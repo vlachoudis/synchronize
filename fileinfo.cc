@@ -61,7 +61,7 @@ void scanDirectory(char *basedir);
 /* --- usage --- */
 void usage()
 {
-	printf("syntax: %s -[lr] -[-output name] <conf_file>\n",prgname);
+	printf("syntax: %s -[lr] -[-output name] <conf_file>...\n",prgname);
 	printf("desc:\n");
 	printf("author:Vasilis.Vlachoudis@cern.ch\n");
 	printf("date:" __DATE__ "\n");
@@ -406,14 +406,6 @@ void parseFile(char *conf_filename)
 #endif
 			}
 		} else
-		if (*pch=='+' || *pch=='-') {
-			RegexpList *newpat = newPattern(pch,caseRespect);
-			if (patternlist==NULL)
-				patternlist = newpat;
-			else
-				pat->next = newpat;
-			pat = newpat;
-		} else
 		if (!memcmp(pch,"remote:",7)) {
 			if (operation_mode==Mode_Remote) {
 				pch += 7;
@@ -424,6 +416,14 @@ void parseFile(char *conf_filename)
 				printf("*-* Check remote: %s\n",initpath);
 #endif
 			}
+		} else
+		if (*pch=='+' || *pch=='-') {
+			RegexpList *newpat = newPattern(pch,caseRespect);
+			if (patternlist==NULL)
+				patternlist = newpat;
+			else
+				pat->next = newpat;
+			pat = newpat;
 		} else {
 			fprintf(stderr,"ERROR: Unknown command found \"%s\"\n",
 					pch);
@@ -482,7 +482,7 @@ int main(int argc, char *argv[])
 				break;
 
 			case 'o':
-				strcpy(output_filename,optarg);
+				strcpy(output_filename, optarg);
 				break;
 
 			case '?':
