@@ -137,7 +137,7 @@ Compare:
 		localBase = ""
 		remoteBase = ""
 
-		call ReadDir flocal,"local.","localBase"
+		call ReadDir flocal, "local.", "localBase"
 		call ReadDir fremote,"remote.","remoteBase"
 
 		if localBase=="" & remoteBase=="" then leave
@@ -147,8 +147,8 @@ Compare:
 
 		delete_local  = open(delete_local_name, "w")	/* delete from local directory	*/
 		delete_remote = open(delete_remote_name,"w")	/* delete from remote directory	*/
-		copy2local    = open(copy2local_name,   "w")		/* copy from remote to local	*/
-		copy2remote   = open(copy2remote_name,  "w")		/* copy from local to remote	*/
+		copy2local    = open(copy2local_name,   "w")	/* copy from remote to local	*/
+		copy2remote   = open(copy2remote_name,  "w")	/* copy from local to remote	*/
 
 		call CompareDirectories
 
@@ -280,6 +280,7 @@ return
 /* --- CopyLocalDir --- */
 CopyLocalDir:
 	dir = local.1
+	call CopyFrom "L",local.1
 	do l=2 to local.0
 		call CopyFrom "L",dir"/"local.l
 	end
@@ -288,6 +289,7 @@ return
 /* --- CopyRemoteDir --- */
 CopyRemoteDir:
 	dir = remote.1
+	call CopyFrom "R",remote.1
 	do r=2 to remote.0
 		call CopyFrom "R",dir"/"remote.r
 	end
