@@ -165,7 +165,7 @@ Compare:
 		if filesize(delete_local_name)>0 then do
 			call Log "Cmd:" RMFILES localBase delete_local_name
 			call flush flog
-			RMFILES localBase delete_local_name "|"TEE logfile
+			RMFILES localBase delete_local_name "|"TEE logfile "2>&1"
 			call seek flog,0,"EOF"
 		end
 
@@ -174,8 +174,10 @@ Compare:
 			call Log "Cmd:" RCOPY delete_remote_name remoteHost":"delete_remote_name
 			call Log "Cmd:" RCMD RMFILES remoteBase delete_remote_name
 			call flush flog
-			RCOPY delete_remote_name remoteHost":"delete_remote_name "|"TEE logfile
-			RCMD RMFILES remoteBase delete_remote_name "|"TEE logfile
+			RCOPY delete_remote_name remoteHost":"delete_remote_name "|"TEE logfile "2>&1"
+
+			RCMD RMFILES remoteBase delete_remote_name "|"TEE logfile "2>&1"
+
 			if ^nothing then
 				RCMD "rm -f" delete_remote_name
 			call seek flog,0,"EOF"
@@ -185,7 +187,8 @@ Compare:
 		if filesize(copy2remote_name)>0 then do
 			call Log "Cmd:" RSYNC '--files-from='copy2remote_name localBase '"'ESC(remoteHost':'remoteBase)'"'
 			call flush flog
-			RSYNC '--files-from='copy2remote_name localBase '"'ESC(remoteHost':'remoteBase)'"' "|"TEE logfile
+			RSYNC '--files-from='copy2remote_name localBase '"'ESC(remoteHost':'remoteBase)'"' "|"TEE logfile "2>&1"
+
 			call seek flog,0,"EOF"
 		end
 
@@ -193,7 +196,8 @@ Compare:
 		if filesize(copy2local_name)>0 then do
 			call Log "Cmd:" RSYNC '--files-from='copy2local_name '"'ESC(remoteHost':'remoteBase)'"' localBase
 			call flush flog
-			RSYNC '--files-from='copy2local_name '"'ESC(remoteHost':'remoteBase)'"' localBase "|"TEE logfile
+			RSYNC '--files-from='copy2local_name '"'ESC(remoteHost':'remoteBase)'"' localBase "|"TEE logfile "2>&1"
+
 			call seek flog,0,"EOF"
 		end
 
@@ -449,7 +453,7 @@ CopyFrom:
 		call lineout copy2local,arg(2)
 	end
 	call Log overlay(right(size,10),_logmsg,40)
-	totalSize = totalSize + size
+	if datatype(size,"NUM") then totalSize = totalSize + size
 return
 
 /* --- Delete --- */
