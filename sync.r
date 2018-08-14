@@ -13,6 +13,12 @@ nothing = 0	/* dont do nothing */
 parse arg args
 args = space(args)
 
+if word(args,1)=="-h" then do
+	/* display hash value just in case */
+	say right(d2x(HashValue(subword(args,2))),8,0)
+	exit
+end
+
 if word(args,1)=="-n" then do
 	nothing = 1	/* do nothing */
 	args = subword(args,2)
@@ -21,8 +27,9 @@ end
 parse var args remoteHost conffile
 if remoteHost="" | conffile = "" then do
 	parse source . . prg .
-	say "syntax:" prg "[-nr] <remote-host> <config-file>"
+	say "syntax:" prg "[-nrh] <remote-host> <config-file>"
 	say "desc:  -n : do not execute anything"
+	say "       -h : show the hash value of what follows"
 	exit
 end
 
