@@ -149,6 +149,8 @@ void printInfo(struct stat *filestat, char *filename)
 	char	name[FILENAME_MAX];
 	char	type;
 	char	*nametoprint;
+	char	username[256];
+	char	groupname[256];
 
 	splitPath(filename,path,name);
 	struct passwd* pwd = getpwuid(filestat->st_uid);
@@ -179,6 +181,11 @@ void printInfo(struct stat *filestat, char *filename)
 		filename, path, name, nametoprint);
 	*/
 
+	strcpy(username,  ((pwd==NULL)?"none":pwd->pw_name));
+	strcpy(groupname, ((grp==NULL)?"none":grp->gr_name));
+	for (char *c=username;  *c; c++) if (*c==' ') *c='_';
+	for (char *c=groupname; *c; c++) if (*c==' ') *c='_';
+
 	fprintf(fout,"%c %ld %ld %s %s %s\n",
 		type,
 #ifdef ANDROID
@@ -187,8 +194,8 @@ void printInfo(struct stat *filestat, char *filename)
 		filestat->st_mtim.tv_sec,
 #endif
 		(long)filestat->st_size,
-		((pwd==NULL)?"none":pwd->pw_name),
-		((grp==NULL)?"none":grp->gr_name),
+		username,
+		groupname,
 		nametoprint);
 } /* printInfo */
 

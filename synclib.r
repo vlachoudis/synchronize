@@ -19,7 +19,7 @@ SyncConfig:
 	SYNCDIFF  = PRGDIR"/syncdiff.r"
 	FILEINFO  = PRGDIR"/fileinfo"
 	RMFILES   = PRGDIR"/rmfiles"
-	LOCALHOST = "hostname"()
+	LOCALHOST = "hostname"()||"-"||"uname"()
 
 	CHKUSER   = 0
 	CHKGROUP  = 0
