@@ -250,10 +250,22 @@ CompareDirectories:
 			/* Directory names are the same */
 			/* Possible types D,N,E,I */
 			select
-				when lt=="E" then
-					call RMDir "R",local.1
-				when rt=="E" then
-					call RMDir "L",remote.1
+				when lt=="E" then do
+					call write ,"  +++ Delete REMOTE dir:" local.1 "(yes*|no)? "
+					pull action
+					if abbrev("NO",action,1) then
+						local.1.@TYPE = "I"
+					else
+						call RMDir "R",local.1
+				end
+				when rt=="E" then do
+					call write , "  +++ Delete LOCAL dir:" remote.1 "(yes*|no)? "
+					pull action
+					if abbrev("NO",action,1) then
+						local.1.@TYPE = "I"
+					else
+						call RMDir "L",remote.1
+				end
 				when lt=="I" | rt=="I" then
 					nop	/* just ignore them */
 				otherwise
