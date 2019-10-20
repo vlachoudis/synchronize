@@ -4,11 +4,17 @@ exit
 /* --- SyncConfig --- */
 SyncConfig:
 	parse source . . prg .
-	PRGDIR = left(prg, lastpos("/",prg)-1)
-	PRGDIR = "/usr/local/bin"
+	last = lastpos("/",prg)-1
+	if last > 0 then
+		PRGDIR = left(prg, lastpos("/",prg)-1)
+	else
+		RPGDIR = "."
+/*	PRGDIR = "/usr/local/bin"*/
 	/*PRGDIR = "/home/bnv/prg/synchronize"*/
 
-	SYNCPATH = "/var/spool/sync"
+/*	SYNCPATH = "/var/spool/sync"*/
+	SYNCPATH = getenv("HOME")"/.local/sync"
+	"mkdir -p" SYNCPATH
 	LOGFILE = "sync.log"
 
 	RSH   = "ssh"

@@ -6,7 +6,7 @@
  */
 signal on error
 
-Version = "0.2"
+Version = "0.3"
 Author  = "Vasilis.Vlachoudis@cern.ch"
 
 nothing = 0	/* dont do nothing */
