@@ -1,4 +1,5 @@
 #!/usr/local/bin/rexx
+#!/data/data/com.termux/files/home/bin/rexx
 /*
  * sync.r - Synchronize files
  * Author  = "Vasilis.Vlachoudis@cern.ch"
@@ -55,25 +56,25 @@ RCMD  = RSH remoteHost
 call Log ">>> Local syncdiff..."
 call time 'r'
 tempext = time("s")
-localdiff = "/tmp/_diff."tempext
+localdiff = TMP"/_diff."tempext
 SYNCDIFF "local" conffile localdiff
 if rc<>0 then call ERROR "RC="RC "running local syncdiff.r"
 call Log ">>>     Elapsed" format(time('r'),,1)'s'
 
 call Log ">>> Remote syncdiff..."
-remotediff = "/tmp/_remotediff."tempext
-remoteconf = "/tmp/_"localHost".conf."tempext
+remotediff = "_remotediff."tempext
+remoteconf = "_"localHost".conf."tempext
 RCOPY conffile remoteHost":"remoteconf
-RCMD SYNCDIFF localHost remoteconf remotediff
+RCMD SYNCDIFF localHost remoteconf RTMP"/"remotediff
 if rc<>0 then call ERROR "RC="RC "running remote" remoteHost":syncdiff.r"
 call Log ">>>     Elapsed" format(time('r'),,1)'s'
 
 call Log ">>> Transfer remote syncdiff file..."
-RCOPY remoteHost":"remotediff remotediff
+RCOPY remoteHost":"RTMP"/"remotediff TMP"/"remotediff
 call Log ">>>     Elapsed" format(time('r'),,1)'s'
 
 flocal  = open(localdiff, "r")
-fremote = open(remotediff,"r")
+fremote = open(TMP"/"remotediff,"r")
 
 if flocal<0 | fremote<0 then
 	call ERROR "Opening file Local="flocal "Remote="fremote
@@ -106,17 +107,17 @@ if ^nothing then do
 	call time 'r'
 
 	call Log ">>> Local host"
-	FILEINFO "-l -o" syncpath||"local" conffile
+	FILEINFO "-l -o" SYNCPATH||"local" conffile
 	if RC<>0 then call ERROR "RC="RC "Executing fileinfo command"
 
 	call Log ">>> Remote host"
-	RCMD FILEINFO "-r -o" syncpath||localHost remoteconf
+	RCMD FILEINFO "-r -o" RSYNCPATH"/"localHost remoteconf
 	if RC<>0 then call ERROR "RC="RC "Executing remote fileinfo command"
 	call Log ">>>     Elapsed" format(time('r'),,1)'s'
 
 	call Log ">>> Cleanup"
-	"rm -f" localdiff remotediff remoteconf remotediff
-	RCMD "rm -f" remoteconf remotediff".gz"
+	"rm -f" localdiff TMP"/"remotediff remoteconf
+	RCMD "rm -f" remoteconf RTMP"/"remotediff".gz"
 	call Log ">>>     Elapsed" format(time('r'),,1)'s'
 end
 
@@ -135,10 +136,10 @@ Compare:
 	remote. = ""
 	totalSize = 0
 
-	delete_local_name  = "/tmp/_delete.local."tempext
-	delete_remote_name = "/tmp/_delete.remote."tempext
-	copy2local_name    = "/tmp/_copy2local."tempext
-	copy2remote_name   = "/tmp/_copy2remote."tempext
+	delete_local_name  = TMP"/_delete.local."tempext
+	delete_remote_name = TMP"/_delete.remote."tempext
+	copy2local_name    = TMP"/_copy2local."tempext
+	copy2remote_name   = TMP"/_copy2remote."tempext
 
 	do forever
 		localBase = ""

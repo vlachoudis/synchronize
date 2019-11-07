@@ -1,4 +1,5 @@
 #!/usr/local/bin/rexx
+#!/data/data/com.termux/files/home/bin/rexx
 /* Compare two sync files and create a diff file with all files and a flag on the change
  * diff file format
  * <flag> <unixtime> <size> <user> <group> <filename>
@@ -24,12 +25,14 @@ if host=='local' then
 else
 	mode = 'r'
 
-call load "/usr/local/lib/brexx/synclib.r"
+call load "synclib.r"
+if result != 0 then
+	call load "/usr/local/lib/brexx/synclib.r"
 /*call load "/home/bnv/prg/synchronize/synclib.r"*/
 call SyncConfig
 
-filenew = "/tmp/_sync."host
-fileold = syncpath||host
+filenew = TMP"/_sync."host
+fileold = SYNCPATH||host
 
 FILEINFO "-"mode "-o "filenew conffile
 if rc<>0 then do

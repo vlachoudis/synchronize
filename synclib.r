@@ -9,11 +9,9 @@ SyncConfig:
 		PRGDIR = left(prg, lastpos("/",prg)-1)
 	else
 		RPGDIR = "."
-/*	PRGDIR = "/usr/local/bin"*/
-	/*PRGDIR = "/home/bnv/prg/synchronize"*/
-
-/*	SYNCPATH = "/var/spool/sync"*/
-	SYNCPATH = getenv("HOME")"/.local/sync"
+	SYNCPATH  = getenv("HOME")"/.local/sync"
+/*	RSYNCPATH = getenv("HOME")"/.local/sync"*/
+	RSYNCPATH = "/home/bnv/.local/sync"
 	"mkdir -p" SYNCPATH
 	LOGFILE = "sync.log"
 
@@ -22,10 +20,12 @@ SyncConfig:
 	RSYNC = 'rsync -avpP -e "ssh -C"'
 	TEE   = "tee -a"
 
-	SYNCDIFF  = PRGDIR"/syncdiff.r"
-	FILEINFO  = PRGDIR"/fileinfo"
-	RMFILES   = PRGDIR"/rmfiles"
+	SYNCDIFF  = "syncdiff.r"
+	FILEINFO  = "fileinfo"
+	RMFILES   = "rmfiles"
 	LOCALHOST = "hostname"()||"-"||"uname"()
+	TMP       = getenv("TEMP")
+	RTMP      = "/tmp"
 
 	CHKUSER   = 0
 	CHKGROUP  = 0
