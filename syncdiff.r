@@ -1,5 +1,5 @@
 #!/usr/local/bin/rexx
-#!/data/data/com.termux/files/home/bin/rexx
+/*#!/data/data/com.termux/files/home/bin/rexx*/
 /* Compare two sync files and create a diff file with all files and a flag on the change
  * diff file format
  * <flag> <unixtime> <size> <user> <group> <filename>
