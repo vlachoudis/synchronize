@@ -1,5 +1,5 @@
 #!/usr/local/bin/rexx
-#!/data/data/com.termux/files/home/bin/rexx
+/*#!/data/data/com.termux/files/home/bin/rexx*/
 /*
  * sync.r - Synchronize files
  * Author  = "Vasilis.Vlachoudis@cern.ch"
