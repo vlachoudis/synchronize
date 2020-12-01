@@ -20,9 +20,9 @@ SyncConfig:
 	RSYNC = 'rsync -avpP -e "ssh -C"'
 	TEE   = "tee -a"
 
-	SYNCDIFF  = "syncdiff.r"
-	FILEINFO  = "fileinfo"
-	RMFILES   = "rmfiles"
+	SYNCDIFF  = PRGDIR"/syncdiff.r"
+	FILEINFO  = PRGDIR"/fileinfo"
+	RMFILES   = PRGDIR"/rmfiles"
 	LOCALHOST = "hostname"()||"-"||"uname"()
 	TMP       = getenv("TEMP")
 	RTMP      = "/tmp"

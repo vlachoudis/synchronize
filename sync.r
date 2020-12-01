@@ -38,7 +38,8 @@ libs = "files.r dates.r synclib.r"
 do while libs<>""
 	parse var libs lib libs
 	if load(lib) then
-		call ERROR "Cannot load library:" lib". Please check RXLIB var"
+		if load("/usr/local/lib/brexx/"lib) then
+			call ERROR "Cannot load library:" lib". Please check RXLIB var"
 end
 
 call SyncConfig
